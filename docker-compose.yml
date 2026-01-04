@@ -1,4 +1,5 @@
-version: '3.7'
+# https://github.com/sachua/mlflow-docker-compose
+# https://github.com/mlflow/mlflow/issues/7696
 
 services:
     minio:
@@ -55,13 +56,28 @@ services:
             - mc
             - db
         ports:
-            - "5000:5000"
+            - "5001:5001"
+        volumes:
+            - sqlite_data:/data
         environment:
             - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
             - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
             - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-        command: mlflow server --backend-store-uri mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE} --default-artifact-root s3://mlflow/ --host 0.0.0.0
+            - BACKEND_URI=sqlite:///data/mlflow-backend.db
+            - REGISTRY_URI=sqlite:///data/mlflow-registry.db
+            - ARTIFACTS_URI=s3://mlflow/
+        command:
+            - sh
+            - -c
+            - mlflow server
+                --port 5001
+                --host 0.0.0.0
+                --backend-store-uri $${BACKEND_URI}
+                --registry-store-uri $${REGISTRY_URI}
+                --default-artifact-root $${ARTIFACTS_URI}
+
 
 volumes:
     dbdata:
+    sqlite_data:
     minio_data:
